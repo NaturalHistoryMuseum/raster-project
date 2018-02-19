@@ -252,6 +252,88 @@ def luh2(scenario, year):
 
   return rasters
 
+def nlu(scenario, year):
+  rasters = {}
+  if scenario not in utils.nlu_scenarios():
+    raise ValueError('Unknown scenario %s' % scenario)
+  ssp = scenario[0:4]
+  
+  lus = [SimpleExpr('annual', 'c3ann + c4ann'),
+         SimpleExpr('nitrogen', 'c3nfx'),
+         SimpleExpr('pasture', 'pastr'),
+         SimpleExpr('perennial', 'c3per + c4per'),
+         SimpleExpr('primary', 'prim' ),
+         SimpleExpr('rangelands', 'range'),
+         SimpleExpr('secondary', 'secd' ),
+  ]
+  #rasters['secondary'] = SimpleExpr('secondary',
+   #                                 'young_secondary + intermediate_secondary + mature_secondary')
+ 
+  ## Human population density and UN subregions
+  #rasters['unSub'] = Raster('unSub', 'ds/luh2/un_subregions.tif')
+  #rasters['un_code'] = Raster('un_codes', 'ds/luh2/un_codes.tif')
+  #rasters.update(hpd.sps.raster(ssp, year))
+  #if year <= 2010:
+  #  rasters['hpd_ref'] = Raster('hpd_ref', 'ds/luh2/gluds00ag.tif')
+  #  rasters['hpd'] = hpd.WPP('historical', year, utils.wpp_xls())
+  #else:
+  #  rasters.update(hpd.sps.scale_grumps(ssp, year))
+
+  ## Agricultural suitability
+  #rasters['ag_suit'] = Raster('ag_suit', 'ds/luh2/ag-suit-zero.tif')
+  #rasters['ag_suit'] = Raster('ag_suit', 'ds/luh2/ag-suit-0.tif')
+  
+  ## NOTE: Pass max & min of log(HPD) so hi-res rasters can be processed
+  ## incrementally.  Recording the max value here for when I create
+  ## other functions for other resolutions.
+  ## 0.50 =>  20511.541 / 9.92874298232494
+  ## 0.25 =>  41335.645 / 10.62948048177454 (10.02 for Sam)
+  ## 1km  => 872073.500 / 13.678628988329825
+  for fname in (utils.nlu_nc(scenario)):
+    try:
+      ds = netCDF4.Dataset(fname)
+    except IOError, e:
+      print "Error: opening '%s'" % fname
+      raise IOError("Error: opening '%s'" % fname)
+    ds_vars = set(ds.variables.keys())
+    names = set(reduce(lambda x,y: x + y, [lu.syms for lu in lus], ['urban']))
+    for name in set.intersection(names, ds_vars):
+      band = 1
+      rasters[name] = Raster(name, "netcdf:%s:%s" % (fname, name),
+                             band = band)
+
+  for lu in lus:
+    rasters[lu.name] = lu
+    if lu.name in ('annual', 'nitrogen', 'perennial'):
+      ref_path = 'ds/nlu/%s-recal.tif' % lu.name
+    else:
+      ref_path = 'ds/nlu/%s-recal.tif' % lu.syms[0]
+    for band, intensity in enumerate(lui.intensities()):
+      n = lu.name + '_' + intensity
+      n2 = n + '_ref'
+      if lu.name == 'pasture':
+        rasters[n] = SimpleExpr(n, '0')
+        rasters[n2] = SimpleExpr(n2, '0')
+
+      else:
+        rasters[n] = lui.nlu(lu.name, intensity)
+        rasters[n2] = Raster(n2, ref_path, band + 1)
+
+  for lu in ('annual', 'pasture'):
+    name = '%s_minimal_and_light' % lu
+    rasters[name] = SimpleExpr(name, '%s_minimal + %s_light' % (lu, lu))
+
+  for lu in ('secondary', 'nitrogen', 'rangelands'):
+    name = '%s_light_and_intense' % lu
+    rasters[name] = SimpleExpr(name, '%s_minimal + %s_light' % (lu, lu))
+
+  for intensity in ['light', 'intense']:
+    expr = ' + '.join(['%s_%s' % (name, intensity) for
+                       name in [lu.name for lu in lus] + ['urban']])
+    rasters[intensity] = SimpleExpr(intensity, expr)
+
+  return rasters
+
 
 def oneKm(year, scenario, hpd_trend):
   rasters = {}
