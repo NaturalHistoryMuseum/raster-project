@@ -149,6 +149,21 @@ def sps(scenario, year):
   fname = os.path.join(path, "%s.nc" % name)
   return 'netcdf:%s/%s.nc:%s' % (path, name, name)
 
+def nlu_dir():
+  return os.path.join(data_root(), 'nlu')
+
+def nlu_scenarios():
+  scenarios = filter(lambda p: ("PREDICT_map" in p),
+                     os.listdir(nlu_dir()))
+  return tuple('_'.join(x.split('_')[3:-2])
+               for x in scenarios)
+def nlu_nc(scenario):
+  scenarios = filter(lambda p: ("PREDICT_map" in p and
+                                scenario in p),
+                     os.listdir(nlu_dir()))
+  return tuple(os.path.join(nlu_dir(),x)
+               for x in scenarios)
+
 def run(cmd, sem=None):
   try:
     if sem is None:
