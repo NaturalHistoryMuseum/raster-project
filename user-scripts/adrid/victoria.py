@@ -54,7 +54,7 @@ for year in years:
 
     # back transform (they were transformed using log(x+1)
     rs[mod.output] = mod
-    rs['output'] = SimpleExpr('output', '(exp(%s) / exp(%f))' % (mod.output, mod.intercept))
+    rs['output'] = SimpleExpr('output', '((exp(%s) - 1) / (exp(%f) - 1))' % (mod.output, mod.intercept))
     rs.write('output', 'D:/victoria_projections/ssp2.6/ab-%d.tif' % year)
 
 for year in years:
@@ -90,7 +90,7 @@ for year in years:
 
     # back transform (they were transformed using log(x+1)
     rs[mod.output] = mod        
-    rs['output'] = SimpleExpr('output', '(exp(%s) / exp(%f))' % (mod.output, mod.intercept))
+    rs['output'] = SimpleExpr('output', '((exp(%s) - 1) / (exp(%f) - 1))' % (mod.output, mod.intercept))
     rs.write('output', 'D:/victoria_projections/ssp5/ab-%d.tif' % year)
 
 
@@ -129,6 +129,6 @@ for year in years:
 
     # back transform (they were transformed using log(x+1)
     rs[mod.output] = mod        
-    rs['output'] = SimpleExpr('output', '(exp(%s) / exp(%f))' % (mod.output, mod.intercept))
+    rs['output'] = SimpleExpr('output', '((exp(%s) - 1) / (exp(%f) - 1))' % (mod.output, mod.intercept))
     rs.write('output', 'D:/victoria_projections/historical/ab-%d.tif' % year)
 
