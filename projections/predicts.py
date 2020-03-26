@@ -2,7 +2,7 @@
 from functools import reduce
 import netCDF4
 import os
-import sys
+import re
 
 from .rasterset import Raster
 from .simpleexpr import SimpleExpr
@@ -340,16 +340,22 @@ def rasterset(lu_src, scenario, year, hpd_trend='medium'):
 def predictify(mod):
   # Remove dots from variable names.  Should also remove any characters
   # which cannot appear in a python variable or function name.
+  pattern = re.compile(r'(?<!^)(?=[A-Z])')
+  dots = re.compile(r'\.| |-')
+
   def nodots(root):
     if isinstance(root, str):
-      newr = root.replace('.', '_')
+      newr = pattern.sub('_', root).lower()
+      newr = dots.sub('_', newr)
       return newr
     return root
-  
+
   syms = mod.hstab
   if not syms:
     return
-
+  mod.equation.transform(nodots)
+  return
+  
   if 'UseIntensity' in syms:
     print('predictify UseIntensity as base')
     f = lambda x: ui.predictify(x, 'UseIntensity')
