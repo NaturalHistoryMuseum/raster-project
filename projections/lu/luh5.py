@@ -32,10 +32,12 @@ def _predictify(root, prefix):
   newr = newr.replace('_Vegetation', '')
   newr = newr.replace(' vegetation', '')
   newr = newr.replace(' forest', '_pri')
-  newr = re.sub(r'(Mature|Intermediate|Young)',  "\\1", newr)
-  newr = newr.replace(' ', '_')
+  newr = newr.replace(' secondary', '_secondary')
+  newr = re.sub(r'(Mature|Intermediate|Young) use',  "\\1", newr)
   newr = newr.lower()
-  assert newr in types() or newr in types(True), 'unknown land use type %s' % root
+  name = newr.split(' ')[0]
+  newr = newr.replace(' ', '_')
+  assert name in types() or name in types(True), 'unknown land use type %s' % root
   return newr
 
 def is_luh5(syms, prefix):

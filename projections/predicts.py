@@ -76,20 +76,20 @@ def luh5(scenario, year, plus3):
   ]
 
   if plus3:
-    lus += [SimpleExpr('secondary', 'mature_secondary + intermediate_secondary + young_secondary'),
-            SimpleExpr('mature_secondary', 'secdmf + secdmn'),
-            SimpleExpr('intermediate_secondary', 'secdif + secdin'),
-            SimpleExpr('young_secondary', 'secdyf + secdyn'),
+    lus += [SimpleExpr('secdm', 'secdmf + secdmn'),
+            SimpleExpr('secdi', 'secdif + secdin'),
+            SimpleExpr('secdy', 'secdyf + secdyn'),
     ]
+    rasters['secondary'] = SimpleExpr('secondary', 'secdy + secdi + secdm')
   else:
     lus += [SimpleExpr('secondary', 'secdf + secdn')]
     
   ## Human population density and UN subregions
-  rasters['unSub'] = Raster('unSub', outfn('luh5', 'un_subregions.tif'))
-  rasters['un_code'] = Raster('un_codes', outfn('luh5', 'un_codes.tif'))
+  rasters['unSub'] = Raster('unSub', outfn('luh2', 'un_subregions.tif'))
+  rasters['un_code'] = Raster('un_codes', outfn('luh2', 'un_codes.tif'))
   #rasters.update(hpd.sps.raster(ssp, year))
   if year < 2015:
-    rasters['hpd_ref'] = Raster('hpd_ref', outfn('luh5', 'gluds00ag.tif'))
+    rasters['hpd_ref'] = Raster('hpd_ref', outfn('luh2', 'gluds00ag.tif'))
     rasters['hpd'] = hpd.WPP('historical', year, utils.wpp_xls())
   else:
     rasters.update(hpd.sps.scale_grumps(utils.luh2_scenario_ssp(scenario),
@@ -127,7 +127,6 @@ def luh5(scenario, year, plus3):
 
   for lu in lus:
     rasters[lu.name] = lu
-    ref_path = outfn('luh5', '%s-recal.tif' % lu.name)
     for band, intensity in enumerate(lui.intensities()):
       n = lu.name + '_' + intensity
       rasters[n] = lui.LUH5(lu.name, intensity)
@@ -135,13 +134,18 @@ def luh5(scenario, year, plus3):
       if lu.name[0:11] == 'plantation_':
         rasters[n2] = SimpleExpr(n2, '0')
       elif lu.name[-10:] != '_secondary':
+        if lu.name in ('annual', 'cropland', 'nitrogen', 'perennial',
+                       'timber'):
+          ref_path = outfn('luh2', '%s-recal.tif' % lu.name)
+        else:
+          ref_path = outfn('luh2', '%s-recal.tif' % lu.syms[0])
         rasters[n2] = Raster(n2, ref_path, band + 1)
 
   for band, intensity in enumerate(lui.intensities()):
     n = 'urban_' + intensity
     rasters[n] = lui.LUH5('urban', intensity)
     n2 = n + '_ref'
-    rasters[n2] = Raster(n2, outfn('luh5', 'urban-recal.tif'), band + 1)
+    rasters[n2] = Raster(n2, outfn('luh2', 'urban-recal.tif'), band + 1)
 
   name = '%s_light_and_intense' % 'primary'
   rasters[name] = SimpleExpr(name, 'primary_light + primary_intense')
